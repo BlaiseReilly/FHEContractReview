@@ -1,0 +1,143 @@
+name: Security Audit
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - master
+  pull_request:
+    branches:
+      - main
+      - develop
+      - master
+  schedule:
+    # Run security audit weekly on Mondays at 00:00 UTC
+    - cron: '0 0 * * 1'
+
+jobs:
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Solhint security checks
+        run: npm run lint:sol
+        continue-on-error: true
+
+      - name: Check for vulnerabilities
+        run: |
+          echo "## Security Audit Report" > security-report.md
+          echo "" >> security-report.md
+          echo "### NPM Audit" >> security-report.md
+          npm audit --json > npm-audit.json || true
+
+          if [ -f npm-audit.json ]; then
+            node -e "
+              const audit = require('./npm-audit.json');
+              if (audit.metadata) {
+                console.log('Vulnerabilities found: ' + audit.metadata.vulnerabilities.total);
+                console.log('- Critical: ' + audit.metadata.vulnerabilities.critical);
+                console.log('- High: ' + audit.metadata.vulnerabilities.high);
+                console.log('- Moderate: ' + audit.metadata.vulnerabilities.moderate);
+                console.log('- Low: ' + audit.metadata.vulnerabilities.low);
+              }
+            " >> security-report.md
+          fi
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: |
+            security-report.md
+            npm-audit.json
+          retention-days: 90
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            if (fs.existsSync('security-report.md')) {
+              const report = fs.readFileSync('security-report.md', 'utf8');
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: report
+              });
+            }
+        continue-on-error: true
+
+  solidity-security:
+    name: Solidity Security Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts
+        run: npm run compile
+
+      - name: Run Solhint
+        run: npm run lint:sol 2>&1 | tee solhint-report.txt
+        continue-on-error: true
+
+      - name: Check for common vulnerabilities
+        run: |
+          echo "Checking for common Solidity vulnerabilities..."
+
+          # Check for reentrancy patterns
+          echo "## Reentrancy Check" >> security-analysis.md
+          grep -rn "external\|public" contracts/ --include="*.sol" | grep -v "view\|pure" | head -20 >> security-analysis.md || echo "No external/public functions found" >> security-analysis.md
+
+          # Check for unchecked external calls
+          echo "" >> security-analysis.md
+          echo "## External Call Check" >> security-analysis.md
+          grep -rn "call\|delegatecall\|staticcall" contracts/ --include="*.sol" >> security-analysis.md || echo "No low-level calls found" >> security-analysis.md
+
+          # Check for access control
+          echo "" >> security-analysis.md
+          echo "## Access Control Check" >> security-analysis.md
+          grep -rn "onlyOwner\|require.*msg.sender" contracts/ --include="*.sol" >> security-analysis.md || echo "No access control modifiers found" >> security-analysis.md
+
+      - name: Upload analysis results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-analysis
+          path: |
+            solhint-report.txt
+            security-analysis.md
+          retention-days: 90
