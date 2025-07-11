@@ -1,0 +1,45 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run Prettier formatting check
+echo "📝 Checking code formatting..."
+npm run format:check || {
+  echo "❌ Code formatting check failed!"
+  echo "💡 Run 'npm run format' to fix formatting issues"
+  exit 1
+}
+
+# Run Solhint
+echo "🔒 Running Solidity linter..."
+npm run lint:sol || {
+  echo "❌ Solidity linting failed!"
+  echo "💡 Fix linting issues before committing"
+  exit 1
+}
+
+# Run ESLint
+echo "🔍 Running JavaScript linter..."
+npm run lint:js || {
+  echo "⚠️  JavaScript linting warnings detected"
+  # Don't fail on warnings, just notify
+}
+
+# Compile contracts to ensure they're valid
+echo "⚙️  Compiling contracts..."
+npm run compile || {
+  echo "❌ Contract compilation failed!"
+  exit 1
+}
+
+# Run tests (optional - can be commented out for faster commits)
+# Uncomment the following lines to run tests before every commit
+# echo "🧪 Running tests..."
+# npm test || {
+#   echo "❌ Tests failed!"
+#   exit 1
+# }
+
+echo "✅ Pre-commit checks passed!"
+echo "📦 Ready to commit"

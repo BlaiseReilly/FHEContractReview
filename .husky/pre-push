@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running pre-push checks..."
+
+# Run all tests
+echo "🧪 Running test suite..."
+npm test || {
+  echo "❌ Tests failed!"
+  echo "💡 Fix failing tests before pushing"
+  exit 1
+}
+
+# Run gas reporting
+echo "⛽ Generating gas report..."
+npm run test:gas || {
+  echo "⚠️  Gas reporting failed, but continuing..."
+}
+
+# Security audit
+echo "🔐 Running security audit..."
+npm audit --audit-level=moderate || {
+  echo "⚠️  Security vulnerabilities detected!"
+  echo "💡 Run 'npm audit fix' to resolve issues"
+  echo "⚠️  Continuing with push, but please address vulnerabilities"
+}
+
+echo "✅ Pre-push checks passed!"
+echo "🚀 Safe to push"
