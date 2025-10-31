@@ -1,0 +1,24 @@
+{
+  "name": "privacy-contract-review",
+  "version": "1.0.0",
+  "description": "Privacy Contract Review System - Secure, Private Contract Compliance Review on Blockchain",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server . -p 3000 -c-1 --cors",
+    "start": "npx http-server . -p 8080 -c-1 --cors"
+  },
+  "keywords": [
+    "blockchain",
+    "privacy",
+    "contract",
+    "review",
+    "compliance",
+    "ethereum",
+    "zama",
+    "fhe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

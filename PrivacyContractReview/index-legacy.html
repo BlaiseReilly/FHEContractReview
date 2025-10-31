@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Contract Review System</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e94560;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .wallet-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #e94560, #ff6b9d);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #00d4ff, #0abde3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.reviewed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.authorized {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .contract-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .contract-item:hover {
+            border-color: #e94560;
+            transform: translateY(-2px);
+        }
+
+        .contract-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .contract-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .contract-meta {
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e1e5e9;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-shield-alt"></i> Privacy Contract Review System</h1>
+            <p>Secure, Private Contract Compliance Review on Blockchain</p>
+        </div>
+
+        <div class="wallet-section card">
+            <h2><i class="fas fa-wallet"></i> Wallet Connection</h2>
+            <div id="wallet-status">
+                <button id="connect-wallet" class="btn">
+                    <i class="fas fa-plug"></i> Connect MetaMask
+                </button>
+            </div>
+            <div id="wallet-info" class="hidden">
+                <p><strong>Connected:</strong> <span id="wallet-address"></span></p>
+                <p><strong>Network:</strong> <span id="network-name"></span></p>
+                <p><strong>Role:</strong> <span id="user-role">User</span></p>
+            </div>
+        </div>
+
+        <div id="main-content" class="hidden">
+            <div class="card" id="config-notice">
+                <h3><i class="fas fa-exclamation-triangle"></i> Configuration Notice</h3>
+                <p>To use this application, you need to deploy the smart contract and update the contract address in <code>app.js</code>.</p>
+                <p><strong>Current Contract Address:</strong> <span id="current-address">Not configured</span></p>
+                <div class="form-group">
+                    <label for="temp-contract-address">Test Contract Address (Temporary)</label>
+                    <input type="text" id="temp-contract-address" placeholder="Enter contract address for testing">
+                    <button id="set-temp-address" class="btn">Set Address</button>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="submit">Submit Contract</button>
+                <button class="tab" data-tab="review">Review Contracts</button>
+                <button class="tab" data-tab="my-contracts">My Contracts</button>
+                <button class="tab" data-tab="admin" id="admin-tab" class="hidden">Admin</button>
+            </div>
+
+            <!-- Submit Contract Tab -->
+            <div id="submit-tab" class="tab-content active">
+                <div class="card">
+                    <h2><i class="fas fa-file-upload"></i> Submit Contract for Review</h2>
+                    <form id="submit-form">
+                        <div class="form-group">
+                            <label for="contract-title">Contract Title</label>
+                            <input type="text" id="contract-title" required placeholder="Enter a descriptive title for your contract">
+                        </div>
+                        <div class="form-group">
+                            <label for="document-hash">Document Hash/IPFS Hash</label>
+                            <input type="text" id="document-hash" required placeholder="Enter IPFS hash or document identifier">
+                        </div>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-paper-plane"></i> Submit Contract
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Review Contracts Tab -->
+            <div id="review-tab" class="tab-content">
+                <div class="card">
+                    <h2><i class="fas fa-search"></i> Available Contracts for Review</h2>
+                    <div id="review-contracts-list">
+                        <div class="loading">Loading contracts...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-edit"></i> Review Contract Clause</h2>
+                    <form id="review-form">
+                        <div class="form-group">
+                            <label for="review-contract-id">Contract ID</label>
+                            <input type="number" id="review-contract-id" required min="1" placeholder="Enter contract ID to review">
+                        </div>
+                        <div class="form-group">
+                            <label for="clause-type">Clause Type</label>
+                            <select id="clause-type" required>
+                                <option value="">Select clause type</option>
+                                <option value="data_processing">Data Processing</option>
+                                <option value="retention">Data Retention</option>
+                                <option value="sharing">Data Sharing</option>
+                                <option value="consent">User Consent</option>
+                                <option value="rights">User Rights</option>
+                                <option value="security">Security Measures</option>
+                                <option value="breach">Breach Notification</option>
+                                <option value="transfer">Data Transfer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="compliance-rating">Compliance Rating (0-10)</label>
+                            <input type="number" id="compliance-rating" required min="0" max="10" placeholder="Rate compliance 0-10">
+                        </div>
+                        <div class="form-group">
+                            <label for="sensitivity-level">Sensitivity Level (1-5)</label>
+                            <input type="number" id="sensitivity-level" required min="1" max="5" placeholder="Rate sensitivity 1-5">
+                        </div>
+                        <div class="form-group">
+                            <label for="review-notes">Review Notes</label>
+                            <textarea id="review-notes" rows="4" placeholder="Enter detailed review notes and recommendations"></textarea>
+                        </div>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-check"></i> Submit Review
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> Complete Privacy Analysis</h2>
+                    <form id="analysis-form">
+                        <div class="form-group">
+                            <label for="analysis-contract-id">Contract ID</label>
+                            <input type="number" id="analysis-contract-id" required min="1" placeholder="Enter contract ID for analysis">
+                        </div>
+                        <div class="grid">
+                            <div class="form-group">
+                                <label for="data-sensitivity">Data Sensitivity Score</label>
+                                <input type="number" id="data-sensitivity" required min="0" placeholder="Overall data sensitivity">
+                            </div>
+                            <div class="form-group">
+                                <label for="gdpr-compliance">GDPR Compliance (0-10)</label>
+                                <input type="number" id="gdpr-compliance" required min="0" max="10" placeholder="GDPR compliance score">
+                            </div>
+                            <div class="form-group">
+                                <label for="ccpa-compliance">CCPA Compliance (0-10)</label>
+                                <input type="number" id="ccpa-compliance" required min="0" max="10" placeholder="CCPA compliance score">
+                            </div>
+                            <div class="form-group">
+                                <label for="retention-risk">Retention Risk (1-5)</label>
+                                <input type="number" id="retention-risk" required min="1" max="5" placeholder="Data retention risk">
+                            </div>
+                            <div class="form-group">
+                                <label for="sharing-risk">Sharing Risk (1-5)</label>
+                                <input type="number" id="sharing-risk" required min="1" max="5" placeholder="Data sharing risk">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-chart-bar"></i> Complete Analysis
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- My Contracts Tab -->
+            <div id="my-contracts-tab" class="tab-content">
+                <div class="card">
+                    <h2><i class="fas fa-file-contract"></i> My Submitted Contracts</h2>
+                    <div id="my-contracts-list">
+                        <div class="loading">Loading your contracts...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Tab -->
+            <div id="admin-tab-content" class="tab-content">
+                <div class="card">
+                    <h2><i class="fas fa-user-shield"></i> Reviewer Management</h2>
+                    <div class="form-group">
+                        <label for="reviewer-address">Reviewer Address</label>
+                        <input type="text" id="reviewer-address" placeholder="Enter Ethereum address">
+                    </div>
+                    <button id="authorize-reviewer" class="btn">
+                        <i class="fas fa-user-plus"></i> Authorize Reviewer
+                    </button>
+                    <button id="revoke-reviewer" class="btn btn-danger">
+                        <i class="fas fa-user-minus"></i> Revoke Reviewer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="alerts"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
