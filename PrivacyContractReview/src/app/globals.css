@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #e94560;
+  --secondary: #00d4ff;
+  --dark-100: #1a1a2e;
+  --dark-200: #16213e;
+  --dark-300: #0f3460;
+}
+
+body {
+  @apply bg-gradient-to-br from-dark-100 via-dark-200 to-dark-300;
+  @apply min-h-screen text-white;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-200;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-opacity-80;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Status Badges */
+.status-badge {
+  @apply px-3 py-1 rounded-full text-sm font-semibold;
+}
+
+.status-pending {
+  @apply bg-yellow-500 bg-opacity-20 text-yellow-300 border border-yellow-500;
+}
+
+.status-reviewed {
+  @apply bg-green-500 bg-opacity-20 text-green-300 border border-green-500;
+}
+
+.status-authorized {
+  @apply bg-blue-500 bg-opacity-20 text-blue-300 border border-blue-500;
+}

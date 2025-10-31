@@ -100,6 +100,63 @@ This platform demonstrates **Fully Homomorphic Encryption (FHE)** applied to sma
 - 🔒 **EIP-712 Signatures** - Secure decryption authorization
 - 🌍 **Production Deployment** - Live on Sepolia testnet with verified contract
 
+### Frontend Implementations
+
+#### 🎨 React Edition (Modern)
+
+The platform now includes a **modern React version** with enhanced developer experience:
+
+**Architecture:**
+- **Next.js 14** - App Router with server and client components
+- **TypeScript** - Full type safety across the application
+- **Tailwind CSS** - Utility-first styling with custom theme
+- **FHEVM Universal SDK** - React hooks for FHE operations
+
+**Components:**
+- `WalletConnection` - MetaMask integration with connection state
+- `SubmitContract` - Contract submission form with validation
+- `ReviewContracts` - Reviewer dashboard with contract listing
+- `ReviewForm` - Clause review interface with encrypted submissions
+- `AnalysisForm` - Privacy analysis with GDPR/CCPA scoring
+- `MyContracts` - User's submitted contracts with status tracking
+- `AdminPanel` - Reviewer management for contract owners
+
+**Custom Hooks:**
+- `useWallet()` - Wallet connection and account management
+- `useContract()` - Smart contract interactions with SDK
+- `useToast()` - Notification system for user feedback
+
+**SDK Integration:**
+```typescript
+import { FHEVMProvider, useFHEVM } from '@fhevm/sdk/react';
+
+// Provider setup
+<FHEVMProvider config={{ network: 'sepolia' }}>
+  <App />
+</FHEVMProvider>
+
+// Component usage
+const { isInitialized, encrypt, decrypt } = useFHEVM();
+```
+
+**Benefits:**
+- ✅ Type-safe contract interactions
+- ✅ Component-based architecture
+- ✅ Hot reload development
+- ✅ Better state management
+- ✅ Easier testing and maintenance
+- ✅ Modern developer experience
+
+#### 📄 Legacy Edition (Static HTML)
+
+Original implementation preserved for:
+- ✅ Simple deployment needs
+- ✅ No build step required
+- ✅ Minimal dependencies
+- ✅ Educational reference
+
+Both versions connect to the **same smart contract** and provide **identical functionality** with different user experiences.
+
 ---
 
 ## 🏗️ Architecture
@@ -198,11 +255,17 @@ This platform demonstrates **Fully Homomorphic Encryption (FHE)** applied to sma
 
 ### Technical Stack
 
+#### React Edition (Modern - Recommended)
+
 ```
 ┌─────────────────────────────────────┐
-│         Frontend Layer              │
-│  • HTML5 / CSS3 / JavaScript       │
+│      Frontend Layer (React)         │
+│  • React 18 + Next.js 14           │
+│  • TypeScript                      │
+│  • Tailwind CSS                    │
+│  • FHEVM Universal SDK (React)     │
 │  • Ethers.js v6                    │
+│  • Lucide React Icons              │
 │  • MetaMask Integration            │
 └─────────────────────────────────────┘
               ↓
@@ -215,6 +278,7 @@ This platform demonstrates **Fully Homomorphic Encryption (FHE)** applied to sma
               ↓
 ┌─────────────────────────────────────┐
 │    FHE Computation Layer            │
+│  • FHEVM Universal SDK             │
 │  • fhevmjs - Client library        │
 │  • TFHE - Encryption scheme        │
 │  • Gateway - Decryption service    │
@@ -226,6 +290,19 @@ This platform demonstrates **Fully Homomorphic Encryption (FHE)** applied to sma
 │  • Hardhat Development             │
 │  • Etherscan Verification          │
 └─────────────────────────────────────┘
+```
+
+#### Legacy Edition (Static HTML)
+
+```
+┌─────────────────────────────────────┐
+│    Frontend Layer (Static)          │
+│  • HTML5 / CSS3 / JavaScript       │
+│  • Ethers.js v6                    │
+│  • MetaMask Integration            │
+└─────────────────────────────────────┘
+              ↓
+        (Same layers as above)
 ```
 
 ---
@@ -291,11 +368,45 @@ npm run verify:sepolia
 
 ### Run Frontend
 
+#### Option 1: React Edition (Recommended)
+
 ```bash
-# Start development server
+# Navigate to React app
+cd PrivacyContractReview
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with contract address
+
+# Start Next.js development server
+npm run dev
+
+# Open http://localhost:3002
+```
+
+**Features:**
+- ✅ Modern React + TypeScript architecture
+- ✅ FHEVM Universal SDK integration
+- ✅ Component-based UI with Tailwind CSS
+- ✅ Hot reload for fast development
+- ✅ Type-safe contract interactions
+
+#### Option 2: Legacy Static HTML
+
+```bash
+# Start simple HTTP server
 npm run dev
 
 # Open browser to displayed localhost URL
+```
+
+**Features:**
+- ✅ No build step required
+- ✅ Lightweight and simple
+- ✅ Direct DOM manipulation
 ```
 
 ---
@@ -745,12 +856,61 @@ This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE
 
 ---
 
+## 📂 Project Structure
+
+### React Edition
+
+```
+PrivacyContractReview/
+├── src/
+│   ├── app/                      # Next.js App Router
+│   │   ├── layout.tsx           # Root layout with FHEVMProvider
+│   │   ├── page.tsx             # Main page with tabbed interface
+│   │   └── globals.css          # Tailwind CSS styles
+│   ├── components/              # React Components
+│   │   ├── WalletConnection.tsx # MetaMask wallet integration
+│   │   ├── SubmitContract.tsx   # Contract submission form
+│   │   ├── ReviewContracts.tsx  # Reviewer dashboard
+│   │   ├── ReviewForm.tsx       # Clause review interface
+│   │   ├── AnalysisForm.tsx     # Privacy analysis form
+│   │   ├── MyContracts.tsx      # User contracts listing
+│   │   └── AdminPanel.tsx       # Admin controls
+│   └── hooks/                   # Custom React Hooks
+│       ├── useWallet.ts         # Wallet management
+│       ├── useContract.ts       # Contract interactions with SDK
+│       └── useToast.ts          # Toast notifications
+├── contracts/                   # Solidity smart contracts
+│   └── PrivacyContractReview.sol
+├── scripts/                     # Deployment scripts
+├── test/                        # Test files
+├── index-legacy.html           # Legacy static version
+├── app-legacy.js              # Legacy JavaScript
+├── package.json
+├── next.config.js
+├── tsconfig.json
+└── tailwind.config.js
+```
+
+### Smart Contracts
+
+```
+contracts/
+├── PrivacyContractReview.sol    # Main contract with FHE
+├── interfaces/
+└── libraries/
+```
+
+---
+
 ## 🙏 Acknowledgments
 
 - **[Zama](https://www.zama.ai/)** - For FHEVM technology and FHE innovation
 - **[fhevmjs](https://github.com/zama-ai/fhevmjs)** - JavaScript FHE library
+- **[FHEVM Universal SDK](https://github.com/zama-ai/fhevm-react-template)** - React SDK for FHEVM
+- **[Next.js](https://nextjs.org/)** - React framework for production
 - **[Hardhat](https://hardhat.org/)** - Ethereum development environment
 - **[OpenZeppelin](https://openzeppelin.com/)** - Smart contract libraries
+- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
 - **Ethereum Community** - For testnet infrastructure
 
 ---
@@ -767,20 +927,37 @@ This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE
 
 ### Current Version (v1.0)
 
+**Core Features:**
 - ✅ FHE-enabled contract review
-- ✅ 8 clause types
+- ✅ 8 clause types for privacy analysis
 - ✅ Role-based access control
-- ✅ Sepolia deployment
-- ✅ Comprehensive testing
+- ✅ Sepolia testnet deployment
+- ✅ Comprehensive testing (54+ test cases)
+
+**Frontend Implementations:**
+- ✅ React + Next.js 14 edition with TypeScript
+- ✅ FHEVM Universal SDK integration
+- ✅ Tailwind CSS responsive design
+- ✅ Component-based architecture
+- ✅ Custom React hooks for state management
+- ✅ Legacy static HTML version
+
+### Version 1.1 (In Progress)
+
+- 🔄 Enhanced React UI with advanced features
+- 🔄 Real-time contract status updates
+- 🔄 Improved mobile responsiveness
+- 🔄 Dark mode support
 
 ### Future Enhancements (v2.0)
 
-- 🔄 Multi-signature reviewer approvals
-- 🔄 Advanced FHE operations (comparison, conditional logic)
-- 🔄 IPFS integration for document storage
-- 🔄 Additional compliance frameworks (SOC 2, ISO 27001)
-- 🔄 Mobile-responsive frontend
-- 🔄 Batch review capabilities
+- 🔮 Multi-signature reviewer approvals
+- 🔮 Advanced FHE operations (comparison, conditional logic)
+- 🔮 IPFS integration for document storage
+- 🔮 Additional compliance frameworks (SOC 2, ISO 27001)
+- 🔮 Batch review capabilities
+- 🔮 GraphQL API for better data querying
+- 🔮 Progressive Web App (PWA) support
 
 ---
 
