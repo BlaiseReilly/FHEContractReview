@@ -1,12 +1,10 @@
-# Architecture Guide
+# Architecture Documentation
 
-Detailed architecture documentation for the FHE Contract Review Platform.
+## Privacy-Preserving Contract Review Platform
 
----
+### Overview
 
-## Overview
-
-The FHE Contract Review Platform is a privacy-preserving smart contract application that enables confidential compliance analysis using Fully Homomorphic Encryption (FHE) from Zama.
+This platform implements a **privacy-first** contract compliance review system using **Fully Homomorphic Encryption (FHE)** technology from Zama. The system enables confidential analysis of contract clauses while maintaining transparency where needed.
 
 ---
 
@@ -15,252 +13,498 @@ The FHE Contract Review Platform is a privacy-preserving smart contract applicat
 ### High-Level Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    Frontend Layer                        │
-│  • HTML5/CSS3/JavaScript                                 │
-│  • Ethers.js v6 (Web3 integration)                      │
-│  • MetaMask (Wallet)                                     │
-│  • fhevmjs (FHE client library)                         │
-└──────────────────────────────────────────────────────────┘
-                         ↓ ↑
-┌──────────────────────────────────────────────────────────┐
-│                Blockchain Layer (Sepolia)                │
-│  • PrivacyContractReview.sol (Smart Contract)           │
-│  • Zama FHEVM Library (FHE operations)                  │
-│  • EVM with FHE support                                  │
-└──────────────────────────────────────────────────────────┘
-                         ↓ ↑
-┌──────────────────────────────────────────────────────────┐
-│              FHE Infrastructure (Zama)                   │
-│  • Gateway Service (Decryption)                          │
-│  • ACL/KMS (Key Management)                              │
-│  • TFHE Library (Encryption Scheme)                      │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    FHE Contract Review Platform                  │
+│               Privacy-Preserving Compliance Analysis             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                ┌─────────────┼─────────────┐
+                │             │             │
+          ┌─────▼──────┐ ┌────▼────┐ ┌─────▼──────┐
+          │ Submitters │ │Reviewers│ │   Admins   │
+          │   (Users)  │ │(Analysts)│ │  (Owner)   │
+          └────────────┘ └─────────┘ └────────────┘
+                │             │             │
+                └─────────────┼─────────────┘
+                              │
+                    ┌─────────▼────────────┐
+                    │   Smart Contract     │
+                    │  (FHEVM-enabled)     │
+                    │  • Encrypted Storage │
+                    │  • Gateway Callbacks │
+                    │  • Refund Protection │
+                    └──────────────────────┘
+                              │
+                    ┌─────────▼────────────┐
+                    │   Zama Gateway       │
+                    │  • FHE Operations    │
+                    │  • Async Decryption  │
+                    │  • Proof Validation  │
+                    └──────────────────────┘
 ```
 
 ---
 
-## Component Details
+## Core Components
 
 ### 1. Smart Contract Layer
 
-**File**: `contracts/PrivacyContractReview.sol`
+#### Contract Structure
 
-**Key Components**:
-- Contract submission and metadata storage
-- Encrypted data storage (euint8, euint32)
-- Role-based access control (owner, reviewers, submitters)
-- FHE operations (encrypt, decrypt, compute)
-- Permission management
-
-**Data Structures**:
 ```solidity
-ContractDocument {
-    string documentHash        // Public: IPFS/SHA256
-    euint32 encryptedScore    // Encrypted: 0-100
-    euint8 encryptedRiskLevel // Encrypted: 1-5
-    address submitter         // Public
-    uint256 submissionTime    // Public
-    bool isReviewed           // Public
-    string publicTitle        // Public
-}
-
-PrivacyAnalysis {
-    euint32 encryptedDataSensitivity  // Encrypted: 0-100
-    euint8 encryptedGDPRCompliance    // Encrypted: 0-10
-    euint8 encryptedCCPACompliance    // Encrypted: 0-10
-    euint8 encryptedRetentionRisk     // Encrypted: 1-5
-    euint8 encryptedSharingRisk       // Encrypted: 1-5
-    bool analysisComplete             // Public
+contract PrivacyContractReview is SepoliaConfig {
+    // Core data structures
+    - ContractDocument: Stores encrypted compliance data
+    - ReviewClause: Individual clause analysis
+    - PrivacyAnalysis: Comprehensive privacy assessment
+    - DecryptionRequest: Gateway callback tracking
 }
 ```
 
----
+#### Key Features
 
-### 2. FHE Integration
+**Encrypted Data Storage**
+- `euint32` for compliance scores (0-100)
+- `euint8` for risk levels (1-5)
+- `euint8` for individual ratings (0-10)
 
-**Encryption Flow**:
+**Gateway Callback Pattern**
 ```
-Client-Side:
-1. User inputs plaintext value (e.g., rating = 8)
-2. fhevmjs encrypts to euint8
-3. Send encrypted value to blockchain
-
-Smart Contract:
-4. Store encrypted value: euint8 encryptedRating = FHE.asEuint8(8)
-5. Grant permissions: FHE.allow(encryptedRating, userAddress)
-6. Perform computations: FHE.add(), FHE.gt(), etc.
-
-Decryption:
-7. User requests decryption with EIP-712 signature
-8. Gateway verifies permissions and decrypts
-9. Return plaintext to authorized user
+User Request → requestScoreDecryption()
+     ↓
+Gateway Processing (Async)
+     ↓
+Callback → processScoreDecryption()
+     ↓
+Update State with Decrypted Values
 ```
 
-**FHE Operations Used**:
-- `FHE.asEuint8()` - Encrypt 8-bit value
-- `FHE.asEuint32()` - Encrypt 32-bit value
-- `FHE.add()` - Add encrypted values
-- `FHE.div()` - Divide encrypted values
-- `FHE.gt()` - Greater than comparison
-- `FHE.allow()` - Grant decryption permission
-- `FHE.requestDecryption()` - Request gateway decryption
-
----
-
-### 3. Frontend Architecture
-
-**File**: `index.html`, `app.js`
-
-**Components**:
-- Wallet connection (MetaMask)
-- Contract interaction (Ethers.js)
-- Form submission
-- Data display
-- Event listening
-
-**Key Functions**:
-```javascript
-async function connectWallet()
-async function submitContract()
-async function reviewClause()
-async function loadContracts()
-async function requestDecryption()
+**Refund Mechanism**
+```
+Decryption Request
+     ↓
+Timeout Check (1 hour)
+     ↓
+If Failed/Timed Out → claimDecryptionRefund()
+     ↓
+Refund Processed → Fees Returned
 ```
 
 ---
 
-## Data Flow Diagrams
+## Data Flow
 
-### Contract Submission Flow
-
-```
-User                Frontend              Smart Contract            Zama FHEVM
-  │                    │                        │                       │
-  ├─ Submit Form ─────>│                        │                       │
-  │                    ├─ Connect Wallet ──────>│                       │
-  │                    │                        │                       │
-  │                    ├─ Call submitContract() │                       │
-  │                    │  (documentHash, title) │                       │
-  │                    │                        ├─ Create Document ────>│
-  │                    │                        ├─ Initialize euint32(0)│
-  │                    │                        ├─ Initialize euint8(3) │
-  │                    │                        ├─ Grant Permissions ──>│
-  │                    │                        │                       │
-  │                    │<── Emit Event ─────────┤                       │
-  │<─ Show Success ────┤                        │                       │
-  │                    │                        │                       │
-```
-
-### Review Flow
+### Complete Review Workflow
 
 ```
-Reviewer            Frontend              Smart Contract            Zama FHEVM
-  │                    │                        │                       │
-  ├─ Review Form ─────>│                        │                       │
-  │  (ratings 0-10)    │                        │                       │
-  │                    ├─ Call reviewClause() ─>│                       │
-  │                    │  (contractId, type,    │                       │
-  │                    │   compliance, sens)    │                       │
-  │                    │                        ├─ Encrypt Values ─────>│
-  │                    │                        │  FHE.asEuint8(8)      │
-  │                    │                        │                       │
-  │                    │                        ├─ Store Encrypted ────>│
-  │                    │                        ├─ Grant Permissions ──>│
-  │                    │                        │  (reviewer, submitter)│
-  │                    │<── Emit Event ─────────┤                       │
-  │<─ Show Success ────┤                        │                       │
-  │                    │                        │                       │
+┌────────────────────────────────────────────────────────────────┐
+│ 1. Contract Submission                                         │
+│    User → submitContract(hash, title) + fee                    │
+│    • Public metadata stored                                    │
+│    • Encrypted fields initialized                              │
+│    • Review fee collected                                      │
+└────────────────────────────────────────────────────────────────┘
+                        ↓
+┌────────────────────────────────────────────────────────────────┐
+│ 2. Clause-by-Clause Review                                     │
+│    Reviewer → reviewClause(contractId, type, rating...)        │
+│    • Compliance rating encrypted (0-10)                        │
+│    • Sensitivity level encrypted (1-5)                         │
+│    • Notes stored (encrypted off-chain)                        │
+│    • Permissions granted to submitter & reviewer               │
+└────────────────────────────────────────────────────────────────┘
+                        ↓
+┌────────────────────────────────────────────────────────────────┐
+│ 3. Privacy Analysis Completion                                 │
+│    Reviewer → completePrivacyAnalysis(...)                     │
+│    • GDPR compliance score (encrypted)                         │
+│    • CCPA compliance score (encrypted)                         │
+│    • Data sensitivity assessment (encrypted)                   │
+│    • Risk calculations (obfuscated)                            │
+│    • Alerts generated if needed                                │
+└────────────────────────────────────────────────────────────────┘
+                        ↓
+┌────────────────────────────────────────────────────────────────┐
+│ 4. Decryption Request (Gateway Pattern)                        │
+│    User → requestScoreDecryption(contractId)                   │
+│    • Request sent to Gateway                                   │
+│    • Timestamp recorded                                        │
+│    • Request ID tracked                                        │
+└────────────────────────────────────────────────────────────────┘
+                        ↓
+┌────────────────────────────────────────────────────────────────┐
+│ 5a. Successful Decryption                                      │
+│     Gateway → processScoreDecryption(requestId, cleartexts...) │
+│     • Proof validated                                          │
+│     • Values decrypted                                         │
+│     • State updated                                            │
+│     • Event emitted                                            │
+└────────────────────────────────────────────────────────────────┘
+                        OR
+┌────────────────────────────────────────────────────────────────┐
+│ 5b. Timeout/Failure Handling                                   │
+│     User → claimDecryptionRefund(contractId)                   │
+│     • Timeout checked (> 1 hour)                               │
+│     • Refund processed                                         │
+│     • Fees returned to submitter                               │
+│     • Protection against permanent locking                     │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-### Decryption Flow
+---
 
+## Privacy-Preserving Techniques
+
+### 1. Division Problem Solution
+
+**Challenge:** Direct division on encrypted values can leak information.
+
+**Solution:** Privacy-preserving obfuscation
+```solidity
+// Bad: Direct division (leaks range)
+score = (a + b) / 2;
+
+// Good: Obfuscated with granularity
+score = (a + b) / 2 * 10;  // Adds noise layer
 ```
-User                Frontend              Smart Contract          Gateway/KMS
-  │                    │                        │                       │
-  ├─ Request Decrypt ─>│                        │                       │
-  │                    ├─ Sign EIP-712 ────────>│                       │
-  │                    │  (signature)           │                       │
-  │                    │                        ├─ Verify Permissions ─>│
-  │                    │                        ├─ Request Decrypt ────>│
-  │                    │                        │  (ciphertext)         │
-  │                    │                        │<── Return Plaintext ──┤
-  │                    │<── Return Value ───────┤                       │
-  │<─ Display Result ──┤                        │                       │
-  │                    │                        │                       │
+
+### 2. Price/Score Obfuscation
+
+**Technique:** Multiply scores by factor before encryption
+- Original score: 85/100
+- Obfuscated: 850/1000
+- Prevents exact value inference from ciphertext size
+
+### 3. Homomorphic Operations
+
+**Encrypted Arithmetic:**
+```solidity
+// All operations on encrypted values
+euint8 avg = FHE.div(
+    FHE.add(gdprScore, ccpaScore),
+    FHE.asEuint8(2)
+);
+```
+
+### 4. Access Control Lists
+
+**Granular Permissions:**
+```solidity
+// Grant read access selectively
+FHE.allow(encryptedScore, submitter);
+FHE.allow(encryptedScore, reviewer);
+// Owner has no automatic access
+```
+
+---
+
+## Gateway Callback Pattern
+
+### Why Gateway Pattern?
+
+**Traditional approach issues:**
+- ❌ Synchronous decryption blocks transaction
+- ❌ High gas costs
+- ❌ No failure recovery
+
+**Gateway pattern benefits:**
+- ✅ Asynchronous processing
+- ✅ Lower gas costs
+- ✅ Built-in failure handling
+- ✅ Timeout protection
+
+### Implementation
+
+```solidity
+// Step 1: Request decryption
+function requestScoreDecryption(uint256 contractId) external {
+    bytes32[] memory cts = new bytes32[](2);
+    cts[0] = FHE.toBytes32(encryptedScore);
+    cts[1] = FHE.toBytes32(encryptedRiskLevel);
+
+    uint256 requestId = FHE.requestDecryption(
+        cts,
+        this.processScoreDecryption.selector
+    );
+
+    // Store request details
+    decryptionRequests[requestId] = DecryptionRequest({
+        contractId: contractId,
+        requester: msg.sender,
+        requestTime: block.timestamp,
+        completed: false,
+        ...
+    });
+}
+
+// Step 2: Gateway callback (async)
+function processScoreDecryption(
+    uint256 requestId,
+    bytes memory cleartexts,
+    bytes memory decryptionProof
+) external {
+    // Verify Gateway signatures
+    FHE.checkSignatures(requestId, cleartexts, decryptionProof);
+
+    // Check timeout
+    if (block.timestamp > requestTime + DECRYPTION_TIMEOUT) {
+        emit DecryptionFailed(...);
+        return;
+    }
+
+    // Decode and store results
+    (uint32 score, uint8 risk) = abi.decode(cleartexts, (uint32, uint8));
+    // Update state...
+}
+```
+
+---
+
+## Refund Mechanism
+
+### Purpose
+Prevent permanent locking of user funds if decryption fails.
+
+### Conditions for Refund
+
+1. **Timeout Condition**
+   ```solidity
+   block.timestamp > requestTime + DECRYPTION_TIMEOUT
+   ```
+
+2. **Failure Condition**
+   ```solidity
+   decryptionRequestId > 0 &&
+   !decryptionCompleted &&
+   !requestCompleted
+   ```
+
+### Refund Process
+
+```solidity
+function claimDecryptionRefund(uint256 contractId) external {
+    // Validate conditions
+    require(!refundProcessed, "Already refunded");
+    require(timedOut || failed, "Not eligible");
+
+    // Process refund
+    refundProcessed = true;
+    platformFees -= reviewFee;
+
+    // Transfer funds
+    (bool sent, ) = payable(submitter).call{value: reviewFee}("");
+    require(sent, "Transfer failed");
+
+    emit RefundProcessed(contractId, submitter, reviewFee);
+}
 ```
 
 ---
 
 ## Security Architecture
 
+### Input Validation
+
+**All inputs validated:**
+```solidity
+modifier validContractId(uint256 contractId) {
+    require(contractId > 0 && contractId <= contractCounter, "Invalid ID");
+    _;
+}
+
+// Range checks
+require(_complianceRating <= 10, "Must be 0-10");
+require(_sensitivityLevel >= 1 && _sensitivityLevel <= 5, "Must be 1-5");
+require(_dataSensitivity <= MAX_SCORE, "Must be 0-100");
+```
+
 ### Access Control
 
-```
-Owner
-  ├─ authorizeReviewer()
-  ├─ revokeReviewer()
-  └─ (implicit) all contract control
+**Three-tier permission model:**
+1. **Owner:** Platform administration
+2. **Reviewers:** Authorized analysts
+3. **Submitters:** Contract owners
 
-Authorized Reviewer
-  ├─ reviewClause()
-  ├─ completePrivacyAnalysis()
-  └─ requestScoreDecryption() (for reviewed contracts)
-
-Submitter
-  ├─ submitContract()
-  └─ requestScoreDecryption() (for own contracts)
-
-Public
-  ├─ getContractInfo()
-  ├─ getClauseInfo()
-  ├─ getAnalysisStatus()
-  └─ view functions
-```
-
-### Permission Model
-
-**FHE Permissions**:
 ```solidity
-// Grant permission to decrypt encrypted value
-FHE.allow(encryptedValue, userAddress);
+modifier onlyOwner() {
+    require(msg.sender == owner, "Owner only");
+    _;
+}
 
-// Grant permission to contract itself (for computations)
-FHE.allowThis(encryptedValue);
+modifier onlyAuthorizedReviewer() {
+    require(authorizedReviewers[msg.sender], "Reviewer only");
+    _;
+}
+
+modifier onlySubmitterOrReviewer(uint256 contractId) {
+    require(
+        contracts[contractId].submitter == msg.sender ||
+        authorizedReviewers[msg.sender],
+        "Not authorized"
+    );
+    _;
+}
 ```
 
-**Permission Matrix**:
+### Overflow Protection
 
-| Data | Owner | Reviewer | Submitter | Public |
-|------|-------|----------|-----------|--------|
-| Document Hash | ✅ | ✅ | ✅ | ✅ |
-| Title | ✅ | ✅ | ✅ | ✅ |
-| Encrypted Score | ✅ | ✅ (if reviewed) | ✅ (if owner) | ❌ |
-| Risk Level | ✅ | ✅ (if reviewed) | ✅ (if owner) | ❌ |
-| Clause Ratings | ✅ | ✅ (if reviewed) | ✅ (if owner) | ❌ |
+**Built-in Solidity 0.8.24:**
+- Automatic overflow/underflow checks
+- No SafeMath required
+- Gas-efficient validation
+
+### Reentrancy Protection
+
+**Checks-Effects-Interactions pattern:**
+```solidity
+// 1. Checks
+require(!refundProcessed, "Already processed");
+
+// 2. Effects
+refundProcessed = true;
+platformFees -= amount;
+
+// 3. Interactions
+(bool sent, ) = payable(user).call{value: amount}("");
+require(sent, "Transfer failed");
+```
 
 ---
 
-## Storage Architecture
+## Gas Optimization (HCU)
 
-### On-Chain Storage
+### Homomorphic Computation Units (HCU)
 
-**Mappings**:
+**Strategy:** Minimize on-chain FHE operations
+
+**Optimizations:**
+
+1. **Batch Operations**
+   ```solidity
+   // Instead of multiple allows
+   FHE.allow(data, user1);
+   FHE.allow(data, user2);
+
+   // Group related operations
+   FHE.allowThis(data);
+   FHE.allow(data, user1);
+   FHE.allow(data, user2);
+   ```
+
+2. **Storage Packing**
+   ```solidity
+   struct ContractDocument {
+       // Pack small values
+       uint8 riskLevel;      // 1 byte
+       bool isReviewed;      // 1 byte
+       bool refundProcessed; // 1 byte
+       // Total: 3 bytes in one slot
+   }
+   ```
+
+3. **External over Public**
+   ```solidity
+   // Uses less gas
+   function getData() external view returns (uint256) {
+       return data;
+   }
+   ```
+
+4. **Minimize Storage Writes**
+   ```solidity
+   // Cache storage variables
+   ContractDocument storage doc = contracts[contractId];
+   doc.isReviewed = true;
+   doc.decryptionCompleted = true;
+   ```
+
+---
+
+## Event-Driven Architecture
+
+### Events for All State Changes
+
 ```solidity
-mapping(uint256 => ContractDocument) public contracts;
-mapping(uint256 => mapping(uint256 => ReviewClause)) public contractClauses;
-mapping(uint256 => PrivacyAnalysis) public privacyAnalyses;
-mapping(uint256 => uint256) public contractClauseCounts;
-mapping(address => bool) public authorizedReviewers;
-mapping(address => uint256[]) public reviewerContracts;
-mapping(address => uint256[]) public submitterContracts;
+// Submission events
+event ContractSubmitted(uint256 indexed contractId, address indexed submitter, string title);
+
+// Review events
+event ClauseReviewed(uint256 indexed contractId, uint256 clauseId, address reviewer);
+event AnalysisCompleted(uint256 indexed contractId, address reviewer);
+
+// Decryption events
+event DecryptionRequested(uint256 indexed contractId, uint256 requestId, address requester);
+event DecryptionCompleted(uint256 indexed contractId, uint256 requestId, uint32 score, uint8 risk);
+event DecryptionFailed(uint256 indexed contractId, uint256 requestId, string reason);
+
+// Refund events
+event RefundProcessed(uint256 indexed contractId, address recipient, uint256 amount);
+event TimeoutRefundClaimed(uint256 indexed contractId, address recipient, uint256 amount);
+
+// Admin events
+event ReviewerAuthorized(address indexed reviewer, address authorizedBy);
+event ReviewerRevoked(address indexed reviewer, address revokedBy);
+
+// Alert events
+event ComplianceAlert(uint256 indexed contractId, uint256 alertLevel);
 ```
 
-**Storage Optimization**:
-- Use mappings over arrays for O(1) lookups
-- Store encrypted data only (minimize storage)
-- Use events for historical data
-- Off-chain storage for large documents (IPFS)
+---
+
+## Technology Stack
+
+### Smart Contract Layer
+- **Solidity:** 0.8.24
+- **FHEVM:** Zama's FHE library
+- **License:** BSD-3-Clause-Clear
+
+### Encryption Layer
+- **FHE Scheme:** TFHE (Torus FHE)
+- **Key Types:**
+  - `euint8`: 8-bit encrypted integers
+  - `euint32`: 32-bit encrypted integers
+  - `euint64`: 64-bit encrypted integers
+  - `ebool`: Encrypted booleans
+
+### Development Tools
+- **Hardhat:** Smart contract development
+- **OpenZeppelin:** Contract utilities
+- **TypeScript:** Type-safe interactions
+
+---
+
+## Deployment Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    Frontend Layer                         │
+│  • React/Next.js or Vanilla JS                           │
+│  • FHEVM SDK for encryption                              │
+│  • MetaMask wallet integration                           │
+└──────────────────────────────────────────────────────────┘
+                        ↓
+┌──────────────────────────────────────────────────────────┐
+│                   Contract Layer                          │
+│  • PrivacyContractReview.sol                             │
+│  • Deployed on Sepolia Testnet                           │
+│  • Verified on Etherscan                                 │
+└──────────────────────────────────────────────────────────┘
+                        ↓
+┌──────────────────────────────────────────────────────────┐
+│                    Gateway Layer                          │
+│  • Zama Gateway Service                                  │
+│  • Async decryption processing                           │
+│  • Signature validation                                  │
+│  • Callback execution                                    │
+└──────────────────────────────────────────────────────────┘
+                        ↓
+┌──────────────────────────────────────────────────────────┐
+│                  Blockchain Layer                         │
+│  • Ethereum (Sepolia Testnet)                            │
+│  • Block confirmations                                   │
+│  • Event indexing                                        │
+└──────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -268,132 +512,86 @@ mapping(address => uint256[]) public submitterContracts;
 
 ### Current Limitations
 
-1. **Gas Costs**: FHE operations are gas-intensive
-   - Encryption: ~50k gas per operation
-   - Decryption: ~80k gas per request
-   - Computation: Varies by operation
+1. **Decryption Time:** 1-5 minutes (Gateway processing)
+2. **Gas Costs:** Higher due to FHE operations
+3. **Storage:** All encrypted data on-chain
 
-2. **Throughput**: Limited by blockchain capacity
-   - Sepolia: ~15 TPS
-   - Ethereum mainnet: ~15-30 TPS
+### Future Improvements
 
-### Future Optimizations
+1. **Layer 2 Integration**
+   - Deploy on rollups (Arbitrum, Optimism)
+   - Reduced gas costs
+   - Faster confirmations
 
-1. **Batch Operations**: Process multiple reviews in single transaction
-2. **Layer 2 Solutions**: Deploy on rollups for lower costs
-3. **Optimistic Verification**: Verify only when challenged
-4. **Storage Sharding**: Distribute data across multiple contracts
+2. **Batch Decryption**
+   - Multiple contracts in one request
+   - Reduced callback overhead
 
----
+3. **IPFS Integration**
+   - Store large encrypted data off-chain
+   - Only hashes on-chain
 
-## Integration Points
-
-### External Systems
-
-**IPFS Integration** (Future):
-```
-Contract Documents
-      ↓
-Upload to IPFS
-      ↓
-Store Hash on Blockchain
-      ↓
-Retrieve via Hash
-```
-
-**Oracle Integration** (Future):
-```
-Off-Chain Analysis
-      ↓
-Oracle Submission
-      ↓
-On-Chain Verification
-      ↓
-Update Contract State
-```
+4. **Caching Layer**
+   - Cache decrypted results
+   - Reduce redundant decryptions
 
 ---
 
-## Deployment Architecture
+## Comparison with Traditional Systems
 
-### Network Topology
-
-```
-Developer Machine
-      ↓
-  Hardhat Deploy
-      ↓
-Sepolia Testnet
-      ↓
-Etherscan Verification
-      ↓
-Frontend (Vercel)
-      ↓
-End Users
-```
-
-### Configuration
-
-**Hardhat Networks**:
-```javascript
-{
-  sepolia: {
-    url: SEPOLIA_RPC_URL,
-    accounts: [PRIVATE_KEY],
-    chainId: 11155111
-  }
-}
-```
+| Feature | Traditional | This Platform |
+|---------|------------|---------------|
+| **Data Privacy** | Plaintext on-chain | Encrypted (FHE) |
+| **Computation** | Public values | Encrypted values |
+| **Compliance Scores** | Visible to all | Authorized only |
+| **Decryption** | Instant | Async (1-5 min) |
+| **Refunds** | Manual/complex | Automatic timeout |
+| **Gas Costs** | Low | Moderate (FHE) |
+| **Security** | Trust-based | Cryptographic |
 
 ---
 
-## Monitoring & Observability
+## Audit Recommendations
 
-### Events for Monitoring
+### Security Audit Points
 
-```solidity
-event ContractSubmitted(...)    // Track submissions
-event ClauseReviewed(...)       // Track reviews
-event AnalysisCompleted(...)    // Track completions
-event ComplianceAlert(...)      // Track compliance issues
-event ReviewerAuthorized(...)   // Track authorization changes
-```
+1. **FHE Implementation**
+   - Verify correct FHE.allow() usage
+   - Check permission grants
+   - Validate decryption callbacks
 
-### Metrics to Track
+2. **Refund Logic**
+   - Test timeout calculations
+   - Verify reentrancy protection
+   - Check refund conditions
 
-- Contracts submitted per day
-- Reviews completed per day
-- Average compliance scores
-- Number of compliance alerts
-- Active reviewers
-- Gas costs per operation
+3. **Access Control**
+   - Test all modifiers
+   - Verify role transitions
+   - Check authorization revocation
 
----
+4. **Gas Analysis**
+   - Profile HCU usage
+   - Optimize storage patterns
+   - Test worst-case scenarios
 
-## Technology Stack Summary
-
-| Layer | Technology | Version |
-|-------|------------|---------|
-| Smart Contract | Solidity | 0.8.24 |
-| FHE Library | Zama FHEVM | 0.5.0 |
-| Development | Hardhat | 2.20.1 |
-| Frontend | Ethers.js | 6.11.1 |
-| FHE Client | fhevmjs | 0.5.0 |
-| Blockchain | Ethereum (Sepolia) | - |
-| Wallet | MetaMask | - |
+5. **Integration Testing**
+   - Gateway callback scenarios
+   - Timeout handling
+   - Concurrent requests
 
 ---
 
-## Design Patterns Used
+## Conclusion
 
-1. **Access Control**: Role-based permissions
-2. **Factory Pattern**: Contract submission creates documents
-3. **Observer Pattern**: Event emissions for state changes
-4. **Strategy Pattern**: Different review strategies per clause type
-5. **State Machine**: Contract review lifecycle (submitted → reviewed → completed)
+This architecture implements a **production-ready** privacy-preserving contract review platform with:
 
----
+✅ **Gateway callback pattern** for async decryption
+✅ **Refund mechanism** for failed decryptions
+✅ **Timeout protection** against fund locking
+✅ **Privacy-preserving computation** using FHE
+✅ **Comprehensive security** with input validation
+✅ **Gas-optimized** HCU usage
+✅ **Event-driven** architecture for transparency
 
-For implementation details, see [API Documentation](./API.md).
-
-For security considerations, see [Security Guide](./SECURITY.md).
+The system balances **privacy**, **security**, and **usability** while maintaining practical gas costs and user experience.
