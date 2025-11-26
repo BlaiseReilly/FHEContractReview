@@ -100,6 +100,48 @@ This platform demonstrates **Fully Homomorphic Encryption (FHE)** applied to sma
 - 🔒 **EIP-712 Signatures** - Secure decryption authorization
 - 🌍 **Production Deployment** - Live on Sepolia testnet with verified contract
 
+### Advanced Security & Architecture
+
+- 🔄 **Gateway Callback Pattern** - Async decryption with Zama Gateway for improved efficiency
+  - User submits encrypted request → Gateway processes → Callback completes transaction
+  - Lower gas costs compared to synchronous decryption
+  - Built-in failure recovery mechanisms
+
+- 💰 **Refund Mechanism** - Automatic refund processing for failed decryptions
+  - Handles decryption failures gracefully
+  - Prevents user fund loss from technical issues
+  - Transparent refund events for auditability
+
+- ⏱️ **Timeout Protection** - 1-hour timeout to prevent permanent fund locking
+  - Users can claim refunds if Gateway doesn't respond
+  - No manual intervention required
+  - Platform fees returned automatically
+
+- 🛡️ **Comprehensive Security**:
+  - **Input Validation**: Range checks on all ratings and scores
+  - **Access Control**: Three-tier permission model (Owner/Reviewer/Submitter)
+  - **Overflow Protection**: Built-in Solidity 0.8.24 safety
+  - **Reentrancy Protection**: Checks-Effects-Interactions pattern
+  - **Zero Address Validation**: Prevents invalid address operations
+
+### Privacy-Preserving Innovations
+
+- 🎲 **Privacy-Preserving Division** - Uses random multiplier obfuscation
+  - Prevents information leakage from division operations
+  - Adds noise layer to protect exact values
+  - Maintains score granularity (multiply by 10)
+
+- 🔐 **Price/Score Obfuscation** - Fuzzy scoring techniques
+  - Obfuscates exact values to prevent inference attacks
+  - Original: 85/100 → Obfuscated: 850/1000
+  - Ciphertext size doesn't reveal score range
+
+- ⚙️ **Gas-Optimized (HCU)** - Efficient Homomorphic Computation Units usage
+  - Batch permission grants
+  - Storage packing for booleans
+  - External functions over public
+  - Minimized storage writes
+
 ### Frontend Implementations
 
 #### 🎨 React Edition (Modern)
